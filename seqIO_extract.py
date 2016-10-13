@@ -6,8 +6,8 @@ import os.path
 
 from Bio import SeqIO
 
-version = '1.0.0'
-date = 'September 21, 2016'
+version = '1.1.0'
+date = 'October 13, 2016'
 
 
 def extant_file(x):
@@ -36,7 +36,8 @@ parser.add_argument('--raw',help='List of locus tags, not file with list of locu
 parser.add_argument('listfiles',help='File or list (if --raw is invoked) of IDs of genes of interest to extract; \'all\' will print all records in file',type=str,nargs='+')
 parser.add_argument('--filetype',help='File type provided (default = auto). FASTQ parsing not recommended with this tool.',default='auto',choices=['FASTA','FASTQ','GBK','auto'])
 parser.add_argument('--ffn',help='Print nucleotide sequence for each CDS of a genbank file (gbk to ffn conversion)',action='store_true',default=False)
-parser.add_argument('--fna',help='Print nucleotide sequence for the source sequence of a genbank file (gbk to fna conversion, use in conjunction with \'all\' positional argument)',action='store_true',default=False)
+parser.add_argument('--fna',help='Print nucleotide sequence for the source sequence of a genbank file (can select records using the LOCUS ID as well) (gbk to fna conversion, use in conjunction with \'all\' positional argument)',action='store_true',default=False)
+parser.add_argument('--gbk',help='Print genbank output from genbank file. Cannot convert FASTA to genbank format.',action='store_true',default=False)
 parser.add_argument('--outname',help='Type of identifier to print to output from genbank file (default = locus_tag)',choices=['locus_tag','protein_id'],default='locus_tag',type=str)
 parser.add_argument('--searchname',help='Type of identifier to search in genbank file (default = locus_tag)',choices=['locus_tag','protein_id'],default='locus_tag',type=str)
 parser.add_argument('--us',help='Extract this length of sequence from the upstream region of a gene',type=int)
@@ -44,6 +45,7 @@ parser.add_argument('--ds',help='Extract this length of sequence from the downst
 parser.add_argument('--matchtype',help='Include exact (default) or inexact matches. Inexact matching takes longer.',choices=['exact','inexact'],default='exact',type=str)
 parser.add_argument('-v','--verbose',help='Print progress messages. Helpful for debugging or double-checking output',action='store_true')
 parser.add_argument('-V','--version',help='Print version message and quit.',action=PrintVersion)
+parser.add_argument('--gi',help='Print GI number for matches.',action='store_true')
 args = parser.parse_args()
 tags = {}
 matches = {}
@@ -95,7 +97,7 @@ def parse_fasta(x, y):
 def parse_genbank(x):
     k = 0
     infile = SeqIO.parse(x, 'genbank')
-    if not args.fna:
+    if not args.fna and not args.gbk:
         for record in infile:
             for feature in record.features:
                 if feature.type == 'CDS':
@@ -119,6 +121,15 @@ def parse_genbank(x):
                                 matches[outname] = searchname
                                 break
                     if outname in matches:
+                        if args.gi:
+                            gi = ''
+                            for item in feature.qualifiers['db_xref']:
+                                if 'GI:' in item:
+                                    gi = item.split(':')[1]
+                                    gi = gi.replace('"','')
+                            if gi:
+                                print '\t'.join([protein_id,locus_tag,gi])
+                            continue
                         if args.us or args.ds:
                             #Print nucleotide sequence upstream and downstream of sequence
                             #This does not take into account the strand
@@ -154,12 +165,15 @@ def parse_genbank(x):
                             print feature.extract(record).seq
     else:
         #All nucleotide output (contigs/chromosomes)
+        outfmt = 'fasta'
+        if args.gbk:
+            outfmt = 'genbank'
+
         for record in infile:
             k += 1
-            if args.all == True:
-                SeqIO.write(record, sys.stdout, 'fasta')
-            else:
-                sys.exit('No input set to print to stdout. Use the \'all\' positional argument to print all of the nucleotide fasta formatted data from a genbank file')
+            if args.all == True or record.id in tags:
+                matches[record.id] = 1
+                SeqIO.write(record, sys.stdout, outfmt)
     return k
 
 parse_opts(args,tags)
