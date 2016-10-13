@@ -58,6 +58,8 @@ To be included...
 
 # History
 
+v1.1.1 - 2016-10-13 - Added inexact matching for genbank file records. record.id is actually VERSION line of the genbank file.
+
 v1.1.0 - 2016-10-13 - Added ability to search for LOCUS headers in genbank file to output a subset of the genbank file or fasta nucleotide data.
 
 v1.0.0 - 2016-09-21 - First revision released to GitHub.

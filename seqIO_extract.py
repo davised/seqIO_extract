@@ -36,7 +36,7 @@ parser.add_argument('--raw',help='List of locus tags, not file with list of locu
 parser.add_argument('listfiles',help='File or list (if --raw is invoked) of IDs of genes of interest to extract; \'all\' will print all records in file',type=str,nargs='+')
 parser.add_argument('--filetype',help='File type provided (default = auto). FASTQ parsing not recommended with this tool.',default='auto',choices=['FASTA','FASTQ','GBK','auto'])
 parser.add_argument('--ffn',help='Print nucleotide sequence for each CDS of a genbank file (gbk to ffn conversion)',action='store_true',default=False)
-parser.add_argument('--fna',help='Print nucleotide sequence for the source sequence of a genbank file (can select records using the LOCUS ID as well) (gbk to fna conversion, use in conjunction with \'all\' positional argument)',action='store_true',default=False)
+parser.add_argument('--fna',help='Print nucleotide sequence for the source sequence of a genbank file (can select records using the VERSION ID as well) (gbk to fna conversion, use in conjunction with \'all\' positional argument)',action='store_true',default=False)
 parser.add_argument('--gbk',help='Print genbank output from genbank file. Cannot convert FASTA to genbank format.',action='store_true',default=False)
 parser.add_argument('--outname',help='Type of identifier to print to output from genbank file (default = locus_tag)',choices=['locus_tag','protein_id'],default='locus_tag',type=str)
 parser.add_argument('--searchname',help='Type of identifier to search in genbank file (default = locus_tag)',choices=['locus_tag','protein_id'],default='locus_tag',type=str)
@@ -171,8 +171,14 @@ def parse_genbank(x):
 
         for record in infile:
             k += 1
-            if args.all == True or record.id in tags:
-                matches[record.id] = 1
+            if args.all == True or args.matchtype == 'exact' and record.id in tags:
+                matches[record.id] = record.id
+            elif args.matchtype == 'inexact':
+                for tag in tags:
+                    if tag in record.id:
+                        matches[record.id] = record.id
+                        break
+            if record.id in matches:
                 SeqIO.write(record, sys.stdout, outfmt)
     return k
 
