@@ -52,11 +52,15 @@ Lastly, the script allows for inexact matching with the --matchtype inexact flag
 
 This would match 1000, 1001, 1002, 1003, 1004 ... 1100 2100 ... 9100. etc.
 
+The --gi flag was added to extract accession, locus tag, and GI numbers from a genbank file. This is mainly to facilitate switching between use of each of the three identifiers. Once GI numbers are phased out from NCBI, this feature will be deprecated.
+
 # Example Dataset
 
 To be included...
 
 # History
+
+v1.1.2 - 2016-11-15 - Added ability to pass from STDIN/pipe.
 
 v1.1.1 - 2016-10-13 - Added inexact matching for genbank file records. record.id is actually VERSION line of the genbank file.
 

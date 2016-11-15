@@ -6,8 +6,8 @@ import os.path
 
 from Bio import SeqIO
 
-version = '1.1.0'
-date = 'October 13, 2016'
+version = '1.1.2'
+date = 'November 15, 2016'
 
 
 def extant_file(x):
