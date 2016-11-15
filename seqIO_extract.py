@@ -56,6 +56,9 @@ def parse_opts(x, y):
     if x.listfiles[0] == 'all':
         x.all = True
     else:
+        if x.listfiles[0] == '-':
+            x.listfiles = [z.strip() for z in sys.stdin.read().split()]
+            x.listfiles = filter(None, x.listfiles)
         if x.raw == False:
             for listfile in x.listfiles:
                 with open(listfile) as l:
