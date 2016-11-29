@@ -33,13 +33,13 @@ class PrintVersion(argparse.Action):
 parser = argparse.ArgumentParser(description='Extract sequence based on ID matching from a FASTA or Genbank file.')
 parser.add_argument('infile',help='Sequence file (FASTA or Genbank) of interest.',type=extant_file)
 parser.add_argument('--raw',help='List of locus tags, not file with list of locus tags',action='store_true',default=False)
-parser.add_argument('listfiles',help='File or list (if --raw is invoked) of IDs of genes of interest to extract; \'all\' will print all records in file',type=str,nargs='+')
+parser.add_argument('listfiles',help='File or list (if --raw is invoked) of IDs of genes of interest to extract; \'all\' will print all records in file; - will take either filenames of list from STDIN',type=str,nargs='+')
 parser.add_argument('--filetype',help='File type provided (default = auto). FASTQ parsing not recommended with this tool.',default='auto',choices=['FASTA','FASTQ','GBK','auto'])
 parser.add_argument('--ffn',help='Print nucleotide sequence for each CDS of a genbank file (gbk to ffn conversion)',action='store_true',default=False)
 parser.add_argument('--fna',help='Print nucleotide sequence for the source sequence of a genbank file (can select records using the VERSION ID as well) (gbk to fna conversion, use in conjunction with \'all\' positional argument)',action='store_true',default=False)
 parser.add_argument('--gbk',help='Print genbank output from genbank file. Cannot convert FASTA to genbank format.',action='store_true',default=False)
-parser.add_argument('--outname',help='Type of identifier to print to output from genbank file (default = locus_tag)',choices=['locus_tag','protein_id'],default='locus_tag',type=str)
-parser.add_argument('--searchname',help='Type of identifier to search in genbank file (default = locus_tag)',choices=['locus_tag','protein_id'],default='locus_tag',type=str)
+parser.add_argument('--outname',help='Type of identifier to print to output from genbank file (default = locus_tag)',choices=['locus_tag','protein_id','gene'],default='locus_tag',type=str)
+parser.add_argument('--searchname',help='Type of identifier to search in genbank file (default = locus_tag)',choices=['locus_tag','protein_id','gene'],default='locus_tag',type=str)
 parser.add_argument('--us',help='Extract this length of sequence from the upstream region of a gene',type=int)
 parser.add_argument('--ds',help='Extract this length of sequence from the downstream region of a gene',type=int)
 parser.add_argument('--matchtype',help='Include exact (default) or inexact matches. Inexact matching takes longer.',choices=['exact','inexact'],default='exact',type=str)
@@ -110,12 +110,20 @@ def parse_genbank(x):
                         protein_id = feature.qualifiers['protein_id'][0]
                     except KeyError:
                         protein_id = 'NULL'
+                    try:
+                        gene = feature.qualifiers['gene'][0]
+                    except KeyError:
+                        gene = 'NULL'
                     outname = locus_tag
                     searchname = locus_tag
                     if args.searchname == 'protein_id':
                         searchname = protein_id
+                    elif args.searchname == 'gene':
+                        searchname = gene
                     if args.outname == 'protein_id':
                         outname = protein_id
+                    elif args.outname == 'gene':
+                        outname = gene
                     if args.all == True or args.matchtype == 'exact' and searchname in tags:
                         matches[outname] = searchname
                     elif args.matchtype == 'inexact':
