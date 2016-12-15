@@ -60,6 +60,8 @@ To be included...
 
 # History
 
+v1.2.0 - 2016-12-14 - Added -nodesc option to print only sequence IDs in FASTA file output.
+
 v1.1.2 - 2016-11-15 - Added ability to pass from STDIN/pipe.
 
 v1.1.1 - 2016-10-13 - Added inexact matching for genbank file records. record.id is actually VERSION line of the genbank file.

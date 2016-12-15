@@ -6,8 +6,8 @@ import os.path
 
 from Bio import SeqIO
 
-version = '1.1.2'
-date = 'November 15, 2016'
+version = '1.2.0'
+date = 'December 14, 2016'
 
 
 def extant_file(x):
@@ -44,6 +44,7 @@ parser.add_argument('--us',help='Extract this length of sequence from the upstre
 parser.add_argument('--ds',help='Extract this length of sequence from the downstream region of a gene',type=int)
 parser.add_argument('--matchtype',help='Include exact (default) or inexact matches. Inexact matching takes longer.',choices=['exact','inexact'],default='exact',type=str)
 parser.add_argument('-v','--verbose',help='Print progress messages. Helpful for debugging or double-checking output',action='store_true')
+parser.add_argument('--nodesc',help='Print only sequence ID in output, not description.',action='store_true')
 parser.add_argument('-V','--version',help='Print version message and quit.',action=PrintVersion)
 parser.add_argument('--gi',help='Print GI number for matches.',action='store_true')
 args = parser.parse_args()
@@ -94,7 +95,11 @@ def parse_fasta(x, y):
                     matches[record.id] = tag
                     break
         if record.id in matches:
-            SeqIO.write(record, sys.stdout, y)
+            if args.nodesc:
+                print '>' + record.id
+                print record.seq
+            else:
+                SeqIO.write(record, sys.stdout, y)
     return k
 
 def parse_genbank(x):
@@ -190,7 +195,11 @@ def parse_genbank(x):
                         matches[record.id] = record.id
                         break
             if record.id in matches:
-                SeqIO.write(record, sys.stdout, outfmt)
+                if args.nodesc and outfmt == 'fasta':
+                    print '>' + record.id
+                    print record.seq
+                else:
+                    SeqIO.write(record, sys.stdout, outfmt)
     return k
 
 parse_opts(args,tags)
