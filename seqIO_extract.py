@@ -4,6 +4,9 @@ import sys
 import argparse
 import csv
 import os.path
+from signal import signal, SIGPIPE, SIGINT, SIG_DFL
+signal(SIGPIPE, SIG_DFL)
+signal(SIGINT, SIG_DFL)
 
 from Bio import SeqIO
 
