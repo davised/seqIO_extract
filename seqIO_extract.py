@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 import sys
 import argparse
 import csv
@@ -6,9 +7,12 @@ import os.path
 
 from Bio import SeqIO
 
-version = '1.2.0'
-date = 'December 14, 2016'
+version = '1.3.0'
+date = 'December 20, 2016'
 
+def eprint(*args, **kwargs):
+    # print to STDERR; for progress messages
+    print(*args, file=sys.stderr, **kwargs)
 
 def extant_file(x):
     """
@@ -26,14 +30,14 @@ class PrintVersion(argparse.Action):
             raise ValueError('nargs for PrintVersion must be 0; it is just a flag.')
         super(PrintVersion, self).__init__(nargs=nargs, **kwargs)
     def __call__(self, parser, values, namespace, option_string=None):
-        sys.stderr.write('{} version {}\n'.format(__file__,version))
-        sys.stderr.write('Submitted {} to github\n'.format(date))
+        eprint('{} version {}'.format(__file__,version))
+        eprint('Submitted {} to github'.format(date))
         parser.exit()
 
 parser = argparse.ArgumentParser(description='Extract sequence based on ID matching from a FASTA or Genbank file.')
 parser.add_argument('infile',help='Sequence file (FASTA or Genbank) of interest.',type=extant_file)
 parser.add_argument('--raw',help='List of locus tags, not file with list of locus tags',action='store_true',default=False)
-parser.add_argument('listfiles',help='File or list (if --raw is invoked) of IDs of genes of interest to extract; \'all\' will print all records in file; - will take either filenames of list from STDIN',type=str,nargs='+')
+parser.add_argument('listfiles',help='File or list (if --raw is invoked) of IDs of genes of interest to extract; \'all\' will print all records in file; - will take either filenames or list from STDIN',type=str,nargs='+')
 parser.add_argument('--filetype',help='File type provided (default = auto). FASTQ parsing not recommended with this tool.',default='auto',choices=['FASTA','FASTQ','GBK','auto'])
 parser.add_argument('--ffn',help='Print nucleotide sequence for each CDS of a genbank file (gbk to ffn conversion)',action='store_true',default=False)
 parser.add_argument('--fna',help='Print nucleotide sequence for the source sequence of a genbank file (can select records using the VERSION ID as well) (gbk to fna conversion, use in conjunction with \'all\' positional argument)',action='store_true',default=False)
@@ -44,7 +48,7 @@ parser.add_argument('--us',help='Extract this length of sequence from the upstre
 parser.add_argument('--ds',help='Extract this length of sequence from the downstream region of a gene',type=int)
 parser.add_argument('--matchtype',help='Include exact (default) or inexact matches. Inexact matching takes longer.',choices=['exact','inexact'],default='exact',type=str)
 parser.add_argument('-v','--verbose',help='Print progress messages. Helpful for debugging or double-checking output',action='store_true')
-parser.add_argument('--nodesc',help='Print only sequence ID in output, not description.',action='store_true')
+parser.add_argument('--nodesc',help='Print only sequence ID in output, not description (for FASTA files).',action='store_true')
 parser.add_argument('-V','--version',help='Print version message and quit.',action=PrintVersion)
 parser.add_argument('--gi',help='Print GI number for matches.',action='store_true')
 args = parser.parse_args()
@@ -96,8 +100,8 @@ def parse_fasta(x, y):
                     break
         if record.id in matches:
             if args.nodesc:
-                print '>' + record.id
-                print record.seq
+                print('>' + record.id)
+                print(record.seq)
             else:
                 SeqIO.write(record, sys.stdout, y)
     return k
@@ -127,7 +131,7 @@ def parse_genbank(x):
                         searchname = gene
                     if args.outname == 'protein_id':
                         outname = protein_id
-                    elif args.outname == 'gene':
+                    elif args.outname == 'gene' and gene != 'NULL':
                         outname = gene
                     if args.all == True or args.matchtype == 'exact' and searchname in tags:
                         matches[outname] = searchname
@@ -144,41 +148,41 @@ def parse_genbank(x):
                                     gi = item.split(':')[1]
                                     gi = gi.replace('"','')
                             if gi:
-                                print '\t'.join([protein_id,locus_tag,gi])
+                                print('\t'.join([protein_id,locus_tag,gi]))
                             continue
                         if args.us or args.ds:
                             #Print nucleotide sequence upstream and downstream of sequence
                             #This does not take into account the strand
                             if args.us:
                                 start = feature.location.start
-                                print '>{}_upstream_{}'.format(locus_tag,args.us)
-                                print record[start-args.us:start].seq
-                            print '>{}'.format(locus_tag)
-                            print feature.extract(record).seq
+                                print('>{}_upstream_{}'.format(locus_tag,args.us))
+                                print(record[start-args.us:start].seq)
+                            print('>{}'.format(locus_tag))
+                            print(feature.extract(record).seq)
                             if args.ds:
                                 end = feature.location.end
-                                print '>{}_downstream_{}'.format(locus_tag,args.ds)
-                                print record[end:end+args.ds].seq
+                                print('>{}_downstream_{}'.format(locus_tag,args.ds))
+                                print(record[end:end+args.ds].seq)
                         elif args.ffn == False:
                             #Protein output
                             try:
                                 translation = feature.qualifiers['translation'][0]
                             except KeyError:
-                                sys.stderr.write('No translation available for {}. Attempting to translate.\n'.format(outname))
+                                eprint('No translation available for {}. Attempting to translate.'.format(outname))
                                 try:
                                     translation = feature.extract(record).translate(table=1).seq
                                 except:
-                                    sys.stderr.write('Unable to translate {}.\n'.format(outname))
+                                    eprint('Unable to translate {}.'.format(outname))
                                 else:
-                                    print '>' + outname
-                                    print translation
+                                    print('>' + outname)
+                                    print(translation)
                             else:
-                                print '>' + outname
-                                print translation
+                                print('>' + outname)
+                                print(translation)
                         else:
                             #Nucleotide output for coding sequences
-                            print '>' + outname
-                            print feature.extract(record).seq
+                            print('>' + outname)
+                            print(feature.extract(record).seq)
     else:
         #All nucleotide output (contigs/chromosomes)
         outfmt = 'fasta'
@@ -196,8 +200,8 @@ def parse_genbank(x):
                         break
             if record.id in matches:
                 if args.nodesc and outfmt == 'fasta':
-                    print '>' + record.id
-                    print record.seq
+                    print('>' + record.id)
+                    print(record.seq)
                 else:
                     SeqIO.write(record, sys.stdout, outfmt)
     return k
@@ -206,9 +210,9 @@ parse_opts(args,tags)
 
 if args.verbose:
     if not args.all:
-        sys.stderr.write('Looking for {} sequences matches from {}.\n'.format(len(tags), args.infile))
+        eprint('Looking for {} sequences matches from {}.'.format(len(tags), args.infile))
     else:
-        sys.stderr.write('Printing all sequences from {}.\n'.format(args.infile))
+        eprint('Printing all sequences from {}.'.format(args.infile))
 
 if args.filetype == 'FASTA':
     count = parse_fasta(args.infile, 'fasta')
@@ -219,6 +223,6 @@ elif args.filetype == 'FASTQ':
 
 if args.verbose:
     if not args.all:
-        sys.stderr.write('Found {}/{} {} matches out of {} in {}.\n'.format(len(matches),len(tags),args.matchtype,count,args.infile))
+        eprint('Found {}/{} {} matches out of {} in {}.'.format(len(matches),len(tags),args.matchtype,count,args.infile))
     else:
-        sys.stderr.write('Printed {} sequences from {}.\n'.format(count,args.infile))
+        eprint('Printed {} sequences from {}.'.format(count,args.infile))
