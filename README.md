@@ -56,9 +56,27 @@ The --gi flag was added to extract accession, locus tag, and GI numbers from a g
 
 # Example Dataset
 
-To be included...
+A FASTA file (Afa\_C58.faa) and a genbank file (Afa\_C58.gbk) are included, along with a test set of protein IDs (test.txt).
+
+To test FASTA-based output, change directory to the examples folder and run:
+
+`../seqIO_extract.py Afa_C58.faa test.txt`
+
+To test protein FASTA output from a genbank file:
+
+`../seqIO_extract.py --searchname protein_id Afa_C58.gbk test.txt`
+
+To test nucleotide FASTA output (CDS) from a genbank file:
+
+`../seqIO_extract.py --searchname protein_id --ffn Afa_C58.gbk test.txt`
+
+To test chromsomal FASTA output from a genbank file:
+
+`../seqIO_extract.py --fna Afa_C58.gbk all | head`
 
 # History
+
+v1.3.0 - 2016-12-20 - Added example dataset, updated print function, fixed a bug with gene output from genbank files.
 
 v1.2.0 - 2016-12-14 - Added -nodesc option to print only sequence IDs in FASTA file output.
 
