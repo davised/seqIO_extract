@@ -118,6 +118,9 @@ def parse_genbank(x):
                 if feature.type == 'CDS':
                     k += 1
                     locus_tag = feature.qualifiers['locus_tag'][0]
+                    if 'pseudo' in feature.qualifiers:
+                        eprint('{} is a pseudogene. Skipping.'.format(locus_tag))
+                        continue
                     try:
                         protein_id = feature.qualifiers['protein_id'][0]
                     except KeyError:
