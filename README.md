@@ -76,6 +76,8 @@ To test chromsomal FASTA output from a genbank file:
 
 # History
 
+v1.4.0 - 2017-01-06 - Added check for pseudogenes.
+
 v1.3.0 - 2016-12-20 - Added example dataset, updated print function, fixed a bug with gene output from genbank files.
 
 v1.2.0 - 2016-12-14 - Added -nodesc option to print only sequence IDs in FASTA file output.
