@@ -51,6 +51,7 @@ parser.add_argument('--us',help='Extract this length of sequence from the upstre
 parser.add_argument('--ds',help='Extract this length of sequence from the downstream region of a gene',type=int)
 parser.add_argument('--matchtype',help='Include exact (default) or inexact matches. Inexact matching takes longer.',choices=['exact','inexact'],default='exact',type=str)
 parser.add_argument('-v','--verbose',help='Print progress messages. Helpful for debugging or double-checking output',action='store_true')
+parser.add_argument('--desc',help='Print description in output - product name from genbank (if available).',action='store_true')
 parser.add_argument('--nodesc',help='Print only sequence ID in output, not description (for FASTA files).',action='store_true')
 parser.add_argument('-V','--version',help='Print version message and quit.',action=PrintVersion)
 parser.add_argument('--gi',help='Print GI number for matches.',action='store_true')
@@ -60,6 +61,7 @@ matches = {}
 count = 0
 
 def parse_opts(x, y):
+# x = args, y = tags dictionary
     x.all = False
     if x.listfiles[0] == 'all':
         x.all = True
@@ -90,6 +92,7 @@ def parse_opts(x, y):
 
 
 def parse_fasta(x, y):
+    # x = input filename; y = file format
     k = 0
     infile = SeqIO.parse(x, y)
     for record in infile:
@@ -110,6 +113,7 @@ def parse_fasta(x, y):
     return k
 
 def parse_genbank(x):
+    # x = input filename
     k = 0
     infile = SeqIO.parse(x, 'genbank')
     if not args.fna and not args.gbk:
@@ -118,17 +122,24 @@ def parse_genbank(x):
                 if feature.type == 'CDS':
                     k += 1
                     locus_tag = feature.qualifiers['locus_tag'][0]
+                    #Skip pseudo genes
                     if 'pseudo' in feature.qualifiers:
                         eprint('{} is a pseudogene. Skipping.'.format(locus_tag))
                         continue
+                    #Get possible output and search terms
                     try:
                         protein_id = feature.qualifiers['protein_id'][0]
                     except KeyError:
                         protein_id = 'NULL'
                     try:
+                        product = feature.qualifiers['product'][0]
+                    except KeyError:
+                        product = 'NULL'
+                    try:
                         gene = feature.qualifiers['gene'][0]
                     except KeyError:
                         gene = 'NULL'
+                    #Set search and output names
                     outname = locus_tag
                     searchname = locus_tag
                     if args.searchname == 'protein_id':
@@ -139,6 +150,8 @@ def parse_genbank(x):
                         outname = protein_id
                     elif args.outname == 'gene' and gene != 'NULL':
                         outname = gene
+                    if args.desc and product != 'NULL':
+                        outname = outname + ' {}'.format(product)
                     if args.all == True or args.matchtype == 'exact' and searchname in tags:
                         matches[outname] = searchname
                     elif args.matchtype == 'inexact':
@@ -179,12 +192,9 @@ def parse_genbank(x):
                                     translation = feature.extract(record).translate(table=1).seq
                                 except:
                                     eprint('Unable to translate {}.'.format(outname))
-                                else:
-                                    print('>' + outname)
-                                    print(translation)
-                            else:
-                                print('>' + outname)
-                                print(translation)
+                                    continue
+                            print('>' + outname)
+                            print(translation)
                         else:
                             #Nucleotide output for coding sequences
                             print('>' + outname)
