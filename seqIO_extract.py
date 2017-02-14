@@ -10,8 +10,8 @@ signal(SIGINT, SIG_DFL)
 
 from Bio import SeqIO
 
-version = '1.4.0'
-date = 'January 6, 2017'
+version = '1.5.0'
+date = 'February 14, 2017'
 
 def eprint(*args, **kwargs):
     # print to STDERR; for progress messages

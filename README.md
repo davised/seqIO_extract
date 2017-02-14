@@ -76,6 +76,8 @@ To test chromsomal FASTA output from a genbank file:
 
 # History
 
+v1.5.0 - 2017-02-14 - Handles GBK files without locus tags. Must provide --searchname and --outname other than locus tag to work.
+
 v1.4.0 - 2017-01-06 - Added check for pseudogenes.
 
 v1.3.0 - 2016-12-20 - Added example dataset, updated print function, fixed a bug with gene output from genbank files.
