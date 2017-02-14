@@ -121,7 +121,15 @@ def parse_genbank(x):
             for feature in record.features:
                 if feature.type == 'CDS':
                     k += 1
-                    locus_tag = feature.qualifiers['locus_tag'][0]
+                    try:
+                        locus_tag = feature.qualifiers['locus_tag'][0]
+                    except KeyError:
+                        locus_tag = 'NULL'
+                        if args.searchname == 'locus_tag' or args.outname == 'locus_tag':
+                            eprint('No locus tag found for gene {}'.format(k))
+                            eprint('Change both searchname and outname to include this entry.')
+                            eprint('Skipping entry for now.')
+                            continue
                     #Skip pseudo genes
                     if 'pseudo' in feature.qualifiers:
                         eprint('{} is a pseudogene. Skipping.'.format(locus_tag))
