@@ -10,8 +10,8 @@ signal(SIGINT, SIG_DFL)
 
 from Bio import SeqIO
 
-version = '1.5.0'
-date = 'February 14, 2017'
+version = '1.5.1'
+date = 'February 15, 2017'
 
 def eprint(*args, **kwargs):
     # print to STDERR; for progress messages
@@ -94,7 +94,7 @@ def parse_opts(args, tags):
     return(args, tags)
 
 
-def parse_fasta(infile, fformat, args, matches):
+def parse_fasta(infile, fformat, args, matches, tags):
     k = 0
     infile = SeqIO.parse(infile, fformat)
     for record in infile:
@@ -114,7 +114,7 @@ def parse_fasta(infile, fformat, args, matches):
         k += 1
     return k
 
-def parse_genbank(infile, args, matches):
+def parse_genbank(infile, args, matches, tags):
     j = 0
     k = 0
     infile = SeqIO.parse(infile, 'genbank')
@@ -252,11 +252,11 @@ def main():
 
     #Parse the files
     if args.filetype == 'FASTA':
-        count = parse_fasta(args.infile, 'fasta', args, matches)
+        count = parse_fasta(args.infile, 'fasta', args, matches, tags)
     elif args.filetype == 'GBK':
-        count = parse_genbank(args.infile, args, matches)
+        count = parse_genbank(args.infile, args, matches, tags)
     elif args.filetype == 'FASTQ':
-        count = parse_fasta(args.infile, 'fastq', args, matches)
+        count = parse_fasta(args.infile, 'fastq', args, matches, tags)
 
     #Print status messages
     if args.verbose:
