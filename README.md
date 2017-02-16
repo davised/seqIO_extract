@@ -76,6 +76,8 @@ To test chromsomal FASTA output from a genbank file:
 
 # History
 
+v1.5.2 - 2017-02-15 - Fixed bug when attempting to translate nucleotide sequences from genbank format files lacking translated feature qualifiers.
+
 v1.5.1 - 2017-02-15 - Fixed bug with search tags introduced in v1.5.0. Upgrade to this version to eliminate the bug.
 
 v1.5.0 - 2017-02-14 - Handles GBK files without locus tags. Must provide --searchname and --outname other than locus tag to work.

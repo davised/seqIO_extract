@@ -10,7 +10,7 @@ signal(SIGINT, SIG_DFL)
 
 from Bio import SeqIO
 
-version = '1.5.1'
+version = '1.5.2'
 date = 'February 15, 2017'
 
 def eprint(*args, **kwargs):
@@ -199,7 +199,7 @@ def parse_genbank(infile, args, matches, tags):
                             except KeyError:
                                 eprint('No translation available for {}. Attempting to translate.'.format(outname))
                                 try:
-                                    translation = feature.extract(record).translate(table=1).seq
+                                    translation = feature.extract(record).seq.translate(table=1)
                                 except:
                                     eprint('Unable to translate {}.'.format(outname))
                                     continue
