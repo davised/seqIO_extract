@@ -11,8 +11,8 @@ signal(SIGINT, SIG_DFL)
 
 from Bio import SeqIO
 
-version = '1.5.2'
-date = 'February 15, 2017'
+version = '1.6.0'
+date = 'April 18, 2017'
 
 def extant_file(x):
     """

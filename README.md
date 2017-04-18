@@ -76,6 +76,8 @@ To test chromsomal FASTA output from a genbank file:
 
 # History
 
+v1.6.0 - 2017-04-18 - Updated code to use logging module. Added -debug flag for some debugging messages. Fixed some redundant objects in the FASTA/Q parsing section.
+
 v1.5.2 - 2017-02-15 - Fixed bug when attempting to translate nucleotide sequences from genbank format files lacking translated feature qualifiers.
 
 v1.5.1 - 2017-02-15 - Fixed bug with search tags introduced in v1.5.0. Upgrade to this version to eliminate the bug.
