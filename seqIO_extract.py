@@ -4,6 +4,7 @@ import sys
 import argparse
 import csv
 import os.path
+import logging
 from signal import signal, SIGPIPE, SIGINT, SIG_DFL
 signal(SIGPIPE, SIG_DFL)
 signal(SIGINT, SIG_DFL)
@@ -12,10 +13,6 @@ from Bio import SeqIO
 
 version = '1.5.2'
 date = 'February 15, 2017'
-
-def eprint(*args, **kwargs):
-    # print to STDERR; for progress messages
-    print(*args, file=sys.stderr, **kwargs)
 
 def extant_file(x):
     """
@@ -37,6 +34,23 @@ class PrintVersion(argparse.Action):
         eprint('Submitted {} to github'.format(date))
         parser.exit()
 
+def init_logger(args):
+    logger = logging.getLogger(__name__)
+    ch = logging.StreamHandler()
+    if args.debug:
+        logger.setLevel(logging.DEBUG)
+        ch.setLevel(logging.DEBUG)
+    elif args.verbose:
+        logger.setLevel(logging.INFO)
+        ch.setLevel(logging.INFO)
+    else:
+        logger.setLevel(logging.WARNING)
+        ch.setLevel(logging.WARNING)
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
+    return(logger)
+
 def run_argparse():
     parser = argparse.ArgumentParser(description='Extract sequence based on ID matching from a FASTA or Genbank file.')
     parser.add_argument('infile',help='Sequence file (FASTA or Genbank) of interest.',type=extant_file)
@@ -51,12 +65,15 @@ def run_argparse():
     parser.add_argument('--us',help='Extract this length of sequence from the upstream region of a gene',type=int)
     parser.add_argument('--ds',help='Extract this length of sequence from the downstream region of a gene',type=int)
     parser.add_argument('--matchtype',help='Include exact (default) or inexact matches. Inexact matching takes longer.',choices=['exact','inexact'],default='exact',type=str)
-    parser.add_argument('-v','--verbose',help='Print progress messages. Helpful for debugging or double-checking output',action='store_true')
+    parser.add_argument('-v','--verbose',help='Print progress messages.',action='store_true')
+    parser.add_argument('--debug',help='Print debugging messages.',action='store_true')
     parser.add_argument('--desc',help='Print description in output - product name from genbank (if available).',action='store_true')
     parser.add_argument('--nodesc',help='Print only sequence ID in output, not description (for FASTA files).',action='store_true')
     parser.add_argument('-V','--version',help='Print version message and quit.',action=PrintVersion)
     parser.add_argument('--gi',help='Print GI number for matches.',action='store_true')
     args = parser.parse_args()
+    args.logger = init_logger(args)
+    args.base = os.path.basename(args.infile)
     return args
 
 def parse_opts(args, tags):
@@ -66,37 +83,48 @@ def parse_opts(args, tags):
     else:
         if args.listfiles[0] == '-':
             #Read from STDIN
+            args.logger.debug('Getting search terms from STDIN, "-" given as input')
             args.listfiles = [x.strip() for x in sys.stdin.read().split()]
             args.listfiles = filter(None, args.listfiles)
         if args.raw == False:
             #Read from file(s)
+            args.logger.debug('Reading search terms from files:')
             for listfile in args.listfiles:
+                args.logger.debug(' + {}'.format(listfile))
                 with open(listfile) as l:
                     for line in l:
                         line = line.rstrip('\n')
                         tags[line] = 1
+            args.logger.debug('Finished reading search terms.')
         else:
             #Take raw tags from cmd line
+            args.logger.debug('Taking raw values from command line as search terms')
             for tag in args.listfiles:
                 tags[tag] = 1
     if args.filetype == 'auto':
         #Detect input file type
+        args.logger.debug('Automatically detecting file type.')
         with open(args.infile, 'r') as f:
             line = f.readline().strip()
             if line[0] == '>':
+                args.logger.debug('FASTA format detected.')
                 args.filetype = 'FASTA'
             elif line[0] == '@':
+                args.logger.debug('FASTQ format detected.')
                 args.filetype = 'FASTQ'
             elif 'LOCUS' in line:
+                args.logger.debug('Genbank format detected.')
                 args.filetype = 'GBK'
             else:
-                sys.exit('Unable to determine filetype of {}. Quitting...\n'.format(args.infile))
+                args.logger.critical('Unable to determine filetype of {}. Exiting\n'.format(args.infile))
+                sys.exit()
     return(args, tags)
 
 
-def parse_fasta(infile, fformat, args, matches, tags):
+def parse_fasta(args, matches, tags):
     k = 0
-    infile = SeqIO.parse(infile, fformat)
+    args.logger.debug('Starting search of file {}.'.format(args.base))
+    infile = SeqIO.parse(args.infile, args.filetype.lower())
     for record in infile:
         if args.all == True or args.matchtype == 'exact' and record.id in tags:
             matches[record.id] = 1
@@ -110,14 +138,16 @@ def parse_fasta(infile, fformat, args, matches, tags):
                 print('>' + record.id)
                 print(record.seq)
             else:
-                SeqIO.write(record, sys.stdout, fformat)
+                SeqIO.write(record, sys.stdout, args.filetype.lower())
         k += 1
+    args.logger.debug('Finished searching file {}.'.format(args.base))
     return k
 
-def parse_genbank(infile, args, matches, tags):
+def parse_genbank(args, matches, tags):
     j = 0
     k = 0
-    infile = SeqIO.parse(infile, 'genbank')
+    args.logger.debug('Starting search of file {}.'.format(args.base))
+    infile = SeqIO.parse(args.infile, 'genbank')
     if not args.fna and not args.gbk:
         for record in infile:
             for feature in record.features:
@@ -128,13 +158,13 @@ def parse_genbank(infile, args, matches, tags):
                     except KeyError:
                         locus_tag = 'NULL'
                         if args.searchname == 'locus_tag' or args.outname == 'locus_tag':
-                            eprint('No locus tag found for gene {}'.format(j))
-                            eprint('Change both searchname and outname to include this entry.')
-                            eprint('Skipping entry for now.')
+                            args.logger.warning('No locus tag found for gene {}'.format(j))
+                            args.logger.warning('Change both searchname and outname to include this entry.')
+                            args.logger.warning('Skipping entry for now.')
                             continue
                     #Skip pseudo genes
                     if 'pseudo' in feature.qualifiers:
-                        eprint('{} is a pseudogene. Skipping.'.format(locus_tag))
+                        args.logger.warning('{} is a pseudogene. Skipping.'.format(locus_tag))
                         continue
                     #Get possible output and search terms
                     try:
@@ -231,6 +261,7 @@ def parse_genbank(infile, args, matches, tags):
                 else:
                     SeqIO.write(record, sys.stdout, outfmt)
             k += 1
+    args.logger.debug('Finished searching file {}.'.format(args.base))
     return k
 
 
@@ -244,26 +275,32 @@ def main():
 
     matches = {}
     count = 0
-    if args.verbose:
-        if not args.all:
-            eprint('Looking for {} sequences matches from {}.'.format(len(tags), args.infile))
-        else:
-            eprint('Printing all sequences from {}.'.format(args.infile))
+    if not args.all:
+        args.logger.info('Looking for {} sequences matches from {}.'.format(len(tags), args.base))
+    else:
+        args.logger.info('Printing all sequences from {}.'.format(args.base))
 
     #Parse the files
-    if args.filetype == 'FASTA':
-        count = parse_fasta(args.infile, 'fasta', args, matches, tags)
+    if args.filetype == 'FASTA' or args.filetype == 'FASTQ':
+        count = parse_fasta(args, matches, tags)
     elif args.filetype == 'GBK':
-        count = parse_genbank(args.infile, args, matches, tags)
-    elif args.filetype == 'FASTQ':
-        count = parse_fasta(args.infile, 'fastq', args, matches, tags)
+        count = parse_genbank(args, matches, tags)
+    else:
+        args.logger.critical('No filetype given. Should never occur. Exiting...')
+        sys.exit()
 
     #Print status messages
-    if args.verbose:
-        if not args.all:
-            eprint('Found {}/{} {} matches out of {} in {}.'.format(len(matches),len(tags),args.matchtype,count,args.infile))
+    if not args.all:
+        args.logger.info('Found {}/{} {} matches out of {} in {}.'.format(len(matches),len(tags),args.matchtype,count,args.base))
+        seqs = [x for x in tags.keys() if x not in matches.keys()]
+        if len(seqs) > 0:
+            args.logger.info('Missing these sequences:')
+            for seq in seqs:
+                args.logger.info('{}'.format(seq))
         else:
-            eprint('Printed {} sequences from {}.'.format(count,args.infile))
+            args.logger.info('All target sequences were found!')
+    else:
+        args.logger.info('Printed {} sequences from {}.'.format(count,args.base))
 
 if __name__ == '__main__':
     main()
