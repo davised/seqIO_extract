@@ -76,6 +76,10 @@ To test chromsomal FASTA output from a genbank file:
 
 # History
 
+v1.6.2 - 2017-04-25 - Code now follows PEP8. Updated all eprint statements to logger. No longer needlessly imports csv.
+
+v1.6.1 - 2017-04-25 - Minor change to code, using set instead of dictionary to store tags. Result is minor increase in speed for large file searching.
+
 v1.6.0 - 2017-04-18 - Updated code to use logging module. Added -debug flag for some debugging messages. Fixed some redundant objects in the FASTA/Q parsing section.
 
 v1.5.2 - 2017-02-15 - Fixed bug when attempting to translate nucleotide sequences from genbank format files lacking translated feature qualifiers.
