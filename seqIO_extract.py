@@ -94,13 +94,13 @@ def parse_opts(args, tags):
                 with open(listfile) as l:
                     for line in l:
                         line = line.rstrip('\n')
-                        tags[line] = 1
+                        tags.add(line)
             args.logger.debug('Finished reading search terms.')
         else:
             #Take raw tags from cmd line
             args.logger.debug('Taking raw values from command line as search terms')
             for tag in args.listfiles:
-                tags[tag] = 1
+                tags.add(line)
     if args.filetype == 'auto':
         #Detect input file type
         args.logger.debug('Automatically detecting file type.')
@@ -269,7 +269,7 @@ def parse_genbank(args, matches, tags):
 def main():
     #Parse the arguments
     args = run_argparse()
-    tags = {}
+    tags = set()
 
     args, tags = parse_opts(args,tags)
 
@@ -292,7 +292,7 @@ def main():
     #Print status messages
     if not args.all:
         args.logger.info('Found {}/{} {} matches out of {} in {}.'.format(len(matches),len(tags),args.matchtype,count,args.base))
-        seqs = [x for x in tags.keys() if x not in matches.keys()]
+        seqs = [x for x in tags if x not in matches.keys()]
         if len(seqs) > 0:
             args.logger.info('Missing these sequences:')
             for seq in seqs:
